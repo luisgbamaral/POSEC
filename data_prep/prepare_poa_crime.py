@@ -28,9 +28,11 @@ import pandas as pd
 sys.stdout.reconfigure(encoding='utf-8')
 
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-CSV_2024     = "C:/Users/luisg/Downloads/SPJ_DADOS_ABERTOS_OCORRENCIAS_JAN_DEZ_2024 - Em 05.01.2026.csv"
-CSV_2025     = "C:/Users/luisg/Downloads/SPJ_DADOS_ABERTOS_OCORRÊNCIAS_JAN_DEZ_2025 - Em 05.01.2026.csv"
-SHP_PATH     = "C:/Users/luisg/Downloads/RS_bairros_CD2022/RS_bairros_CD2022.shp"
+# Raw sources (RS/SPJ open data + IBGE shapefile) are not redistributable here;
+# place them under ./raw/ and point these at them (or override via CLI).
+CSV_2024     = "./raw/POA_ocorrencias_2024.csv"
+CSV_2025     = "./raw/POA_ocorrencias_2025.csv"
+SHP_PATH     = "./raw/RS_bairros_CD2022/RS_bairros_CD2022.shp"
 DATASET_DIR  = os.path.join(SCRIPT_DIR, "dataset")
 DATASET_NAME = "POA_CRIME"
 

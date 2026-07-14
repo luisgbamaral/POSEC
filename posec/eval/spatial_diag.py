@@ -31,7 +31,7 @@ from posec.eval.plotting import set_style
 
 set_style()
 FIG_DIR = pjoin(OUT_DIR, 'figs')
-METHODS = ['base', 'guardia']
+METHODS = ['base', 'posec']
 N_PERM = 200
 np.random.seed(0)
 
@@ -98,8 +98,8 @@ def method_preds(ds, N, bk, Wr):
         return None
     (y_tr, p_tr), (y_va, p_va), (y_te, p_te) = data['train'], data['val'], data['test']
     preds = {'base': p_te}
-    preds['guardia'] = np.maximum(
-        guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N)['global'][0], 0.0)
+    preds['posec'] = np.maximum(
+        guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N)['lisapareto'][0], 0.0)
     return y_te, preds
 
 

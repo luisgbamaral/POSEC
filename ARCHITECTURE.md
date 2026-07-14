@@ -25,9 +25,10 @@ checkpoints/ ──► posec.models.infer ──► backbone predictions ŷ  (fr
 ## 2. Module ↔ method map
 
 ### `posec/config.py` — the experiment
-Single source of truth: cities, backbones, split sizes, NB grid, GUARD IA
-settings (gate loss, EB pool min nodes, parallel jobs), paths. `SMOKE=1` (env
-var) restricts to POA/stgcn for fast regression checks.
+Single source of truth: cities (SP/POA/BA/Chicago + weekly `*_7D`), backbones,
+split sizes, NB grid, POSEC settings (gate loss, EB pool min nodes, parallel
+jobs), paths. Env overrides drive `reproduce.py`: `POSEC_CITIES`, `POSEC_NVAL`,
+`POSEC_NTEST`, `POSEC_OUT`, `POSEC_BACKBONES`; `SMOKE=1` restricts to POA/stgcn.
 
 ### `posec/models/` — backbones
 - `base_model.py`, `layers.py`, `trainer.py`, `tester.py` — STGCN and the SAEA
@@ -45,58 +46,63 @@ var) restricts to POA/stgcn for fast regression checks.
   (ŷ as a *free* covariate: α≠1 absorbs systematic bias). Training data only.
   `fit_one_node` returns the MLE params + val/test design matrices for the sweep.
 - **`guardia.py`** — dose and gate on top of the GLM: sweep c ∈ [0,2] scaling
-  β2, record per-node validation loss L[c,i] and |LISA| A[c,i]; select c by
-  `global` (Pareto knee on aggregate loss×|LISA|), `pernode` (argmin loss) or
-  `lisapareto` (per-node Pareto knee); per-node gate keeps the backbone
-  wherever calibration does not beat it on validation. The heavy per-cell GLM
-  fit runs once, shared by all three dose modes.
+  β2, record per-node validation loss L[c,i] and |LISA| A[c,i]; select c per
+  node at the **Pareto knee of (L[:,i], A[:,i])** (`cstar_lisa`, the proposed
+  dose), with degenerate cells falling back to the global-knee `best_c`; a
+  per-node gate keeps the backbone wherever calibration does not beat it on
+  validation. Returns the `lisapareto` prediction (`mu_te, mu_va, s_i`).
 - **`predictive.py`** — every method is scored as a discrete distribution over
   integer counts. `Predictive` (shared: pmf via cdf differences, log score,
   randomized PIT, central-interval coverage); `CountPredictive` (native
-  Poisson/NB2); `TransformPredictive` (Gaussian in a Transform space, used for
-  the `base+Gauss` baseline). `nb_alpha_mle` (NB2 dispersion by grid MLE) and
-  `shrink_var` (per-node predictive variance shrinkage) also live here.
-- **`transforms.py`** — variance-stabilizing spaces (`LEVEL`, `LOG1P`,
-  `ANSCOMBE`); POSEC uses `LEVEL` for the Gaussian baseline. (Kept whole so the
-  numerical unit tests remain shared with the sthyb repo.)
+  Poisson/NB2); `nb_alpha_mle` (NB2 dispersion by grid MLE on validation).
 
 ### `posec/eval/` — scoring and diagnostics
 - **`metrics.py`** — Moran's I (+ analytical p per step, t-test across steps),
   LISA (mean and per-node), PAI@k, MAE/RMSE, Newey-West HAC test (the
   Giacomini-White / Diebold-Mariano statistic).
-- **`probabilistic.py`** — the orchestrator: loads each backbone, runs GUARD IA
-  (the three dose modes + NB wrappers) plus the base distributions, and scores
-  the 9 methods on the unified discrete log score + point/spatial metrics.
-  Writes 4 CSVs. Sanity gates abort the run if any PMF loses mass or a log score
-  is non-finite.
+- **`probabilistic.py`** — the orchestrator: loads each backbone, runs POSEC and
+  scores **three methods** — `base+Poisson`, `base+NB` (raw backbone baselines)
+  and `guardia-lisac+NB` (the proposed model) — on the unified discrete log score
+  + point/spatial metrics. Writes 4 CSVs. Sanity gates abort if any PMF loses
+  mass or a log score is non-finite.
 - **`spatial_diag.py`** — residual cross-sectional dependence: Pesaran CD,
   correlogram by graph hop with a node-permutation null band, λ_max vs the
   Marchenko-Pastur edge, and error-correlation-matrix figures (base vs POSEC).
 - **`plotting.py`** — NeurIPS figure style (`set_style()`), one color per
   method family (`PALETTE`, `method_color()`), `save_fig()` (PDF+PNG).
 
-### `scripts/` — thin entry points
-Each is ≤ 10 lines: parse nothing, import the package, run. The training
-scripts (`train_stgcn/gwavenet/sthsl`) are the original SAEA-protocol trainers.
+### `scripts/` — entry points
+- `reproduce.py` — **the single replication driver**: runs the calibration +
+  spatial diagnostics for every experiment set (`main` / `chicago` / `weekly`),
+  with `--train` / `--build-data` flags. Portable (uses `sys.executable`; no
+  machine paths).
+- `run_probabilistic.py`, `run_spatial_diag.py` — thin wrappers over the eval
+  package. `train_{stgcn,gwavenet,sthsl}.py` — the SAEA-protocol backbone trainers.
 
-### `tests/` — numerical invariants
-Six fast tests (no TF, no checkpoints): transform round-trip, PMF mass,
-PIT uniformity, NB-MLE recovery, LISA consistency, HAC power.
+### `data_prep/` — dataset construction
+`prepare_chicago.py` (public Chicago CSV → `CHI_CRIME_*` on a ~1 km grid),
+`make_weekly.py` (7-day-sum `*_7D` variants), and the SP/POA/BA provenance
+scripts. All take input paths via CLI (defaults under `./raw/`).
+
+### `tests/` — numerical invariants + golden lock
+`test_math.py` (PMF mass, PIT uniformity, NB-MLE recovery, LISA consistency,
+HAC power) and `test_golden.py` (the SMOKE run reproduces
+`tests/fixtures/golden_smoke_poa_stgcn_als.csv` within `atol=1e-3`).
 
 ## 3. Design decisions
 
-- **Methods as data, not branches.** The backbone catalogue is a registry; the
-  three dose modes share one GLM fit and one sweep.
+- **One proposed model.** `guardia-lisac+NB` is the method; `base+Poisson` /
+  `base+NB` are the raw-backbone baselines. The backbone catalogue is a registry.
 - **One config.** No hyperparameter lives outside `config.py`; the paper ↔
   code mapping is auditable in one screen.
 - **Anti-leak by construction.** Estimation consumes train; dose/gate use
   validation; test enters only through `guardia_predict`, whose test-time
   regressors are lagged observed values.
-- **Unified probabilistic ruler.** Every method — Poisson, NB, Gaussian
-  baseline — is reduced to a PMF over the integers before scoring, so log
-  scores are comparable across families.
-- **Golden-regression development.** Every refactor was verified byte-identical
-  on the output CSVs (smoke + full 9-cell) before landing.
+- **Unified probabilistic ruler.** Every method is reduced to a PMF over the
+  integers (Poisson / NB2) before scoring, so log scores are comparable.
+- **Golden-regression development.** Every refactor is verified against the
+  golden fixture (`test_golden.py`, `atol=1e-3` above the ~1e-6 TF32 GPU-inference
+  noise) before landing.
 
 ## 4. How to extend
 

@@ -1,6 +1,5 @@
 """predictive.py — discrete predictive distributions over integer counts."""
 from scipy.stats import nbinom
-from scipy.stats import norm
 from scipy.stats import poisson
 import numpy as np
 from posec.config import ALPHA_GRID
@@ -27,15 +26,6 @@ class Predictive:
         lo, hi = self.ppf((1 - level) / 2), self.ppf((1 + level) / 2)
         return float(np.mean((y >= lo) & (y <= hi)))
 
-class TransformPredictive(Predictive):
-    """Gaussian N(mu, sig^2) in a Transform space, discretized to integer counts."""
-    def __init__(self, tf, point, mu, sig):
-        super().__init__(point); self.tf, self.mu, self.sig = tf, mu, sig
-    def cdf(self, k):
-        return norm.cdf((self.tf.fwd(np.asarray(k, dtype=np.float64) + 0.5) - self.mu) / self.sig)
-    def ppf(self, q):
-        return self.tf.ppf_edge(self.mu, self.sig, norm.ppf(q))
-
 class CountPredictive(Predictive):
     """Native count distribution (Poisson / NB2) — normalized by construction."""
     def __init__(self, kind, point, **prm):
@@ -48,12 +38,6 @@ class CountPredictive(Predictive):
         return (poisson.ppf(q, self.p['lam']) if self.kind == 'poisson'
                 else nbinom.ppf(q, self.p['n'], self.p['pp']))
     def mass_ok(self, Kbig=4000): return True
-
-
-def shrink_var(s2_node, T_split):
-    """Per-node predictive variance shrunk toward the panel mean (James-Stein-like)."""
-    w = T_split / (T_split + 30.0)
-    return np.maximum(w * s2_node + (1 - w) * float(np.mean(s2_node)), 1e-6)
 
 
 def nb_alpha_mle(y_int, mu, grid=ALPHA_GRID):

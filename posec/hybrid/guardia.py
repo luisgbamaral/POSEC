@@ -1,4 +1,5 @@
-"""guardia.py — GUARD IA: per-cell Poisson-GLM calibration with gated spatial-lag dose."""
+"""guardia.py — POSEC: per-cell Poisson-GLM calibration with a per-node
+Pareto-optimal spatial-lag dose (the proposed `guardia-lisac` correction)."""
 from joblib import Parallel, delayed
 import numpy as np
 from posec.config import EB_MIN, GUARDIA_GATE, GUARDIA_NJOBS
@@ -8,25 +9,22 @@ from posec.hybrid.glm import fit_one_node
 
 def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
                     gate_loss=GUARDIA_GATE, njobs=GUARDIA_NJOBS):
-    """GUARD IA: per-cell Poisson-GLM calibration with a gated spatial-lag dose.
+    """POSEC calibration: per-cell Poisson-GLM with a per-node Pareto-optimal,
+    gated spatial-lag dose (Pareto-Optimal Spatial Error Calibration).
 
-    Pipeline (the heavy per-cell GLM fit runs ONCE, shared by all three modes):
+    Pipeline:
       1. Fit the calibration GLM per cell (see posec.hybrid.glm) on TRAINING only.
       2. Sweep a dose c in [0, 2] that scales the spatial-lag coefficient beta2;
          on VALIDATION record, per candidate c, the per-node gated loss curve
          L[c, i] and the per-node |LISA| curve A[c, i].
-      3. Select c three ways:
-         'global'     — one best_c for all cells: Pareto knee on the aggregate
-                        (loss, mean |LISA|) frontier over the gated grid;
-         'pernode'    — c*_i = argmin_c of the per-node gated val loss;
-         'lisapareto' — c*_i = per-node Pareto knee on (L[:, i], A[:, i])
-                        (loss vs local spatial autocorrelation, per cell).
-      4. Per-node gate (all modes): the calibrated prediction replaces the
-         backbone for cell i only if it beats the backbone's val loss; s_i = 1.
+      3. Select c per node at the Pareto knee of (L[:, i], A[:, i]) — loss vs
+         local spatial autocorrelation (`cstar_lisa`). Degenerate cells fall back
+         to the global Pareto-knee dose `best_c`.
+      4. Per-node gate: the calibrated prediction replaces the backbone for cell i
+         only if it beats the backbone's val loss; s_i = 1.
     gate_loss in {'mae','mse'} sets both the gate criterion and the Pareto loss.
 
-    Returns {'global'|'pernode'|'lisapareto': (mu_te, mu_va, s_i),
-             'best_c': float, 'cstar_loss': (N,), 'cstar_lisa': (N,)}.
+    Returns {'lisapareto': (mu_te, mu_va, s_i), 'best_c': float, 'cstar_lisa': (N,)}.
     Anti-leak: residual lags feeding val/test come only from the observed past.
     """
     eps_tr, eps_va, eps_te = y_tr - p_tr, y_va - p_va, y_te - p_te
@@ -48,8 +46,7 @@ def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
     conv = [i for i in range(N) if nd[i].get('beta_calib') is not None]
     if len(conv) < EB_MIN:
         base = (p_te.copy(), p_va.copy(), np.zeros(N))
-        return {'global': base, 'pernode': base, 'lisapareto': base,
-                'best_c': 0.0, 'cstar_loss': np.zeros(N), 'cstar_lisa': np.zeros(N)}
+        return {'lisapareto': base, 'best_c': 0.0, 'cstar_lisa': np.zeros(N)}
     mu_beta = np.mean([nd[i]['beta_calib'] for i in conv], 0); cset = set(conv)
     beta_raw = {i: (nd[i]['beta_calib'].copy() if i in cset else mu_beta.copy()) for i in range(N)}
     base_va = np.column_stack([np.exp(nd[i]['off_va']) for i in range(N)])  # (T_va, N)
@@ -90,10 +87,7 @@ def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
     mn = (mis[pidx] - mis.min()) / max(mis.max() - mis.min(), 1e-12)
     best_c = float(scales[pidx[np.argmin(np.sqrt(ln ** 2 + mn ** 2))]])
 
-    # ── PER-NODE (loss-only): c*_i = argmin_c L[:,i] (GATED curve) ──
-    cstar_loss = scales[np.argmin(L, axis=0)]
-
-    # ── PER-NODE Pareto (dissertation Eq.): knee on (L[:,i], A[:,i]) ──
+    # ── PER-NODE Pareto (the proposed dose): knee on (L[:,i], A[:,i]) ──
     cstar_lisa = np.zeros(N)
     for i in range(N):
         li, ai = L[:, i], A[:, i]
@@ -126,7 +120,5 @@ def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
                 mte[:, i] = ndi['pred_te_base']
         return mte, mva, si
 
-    return {'global':     build(lambda i: best_c),
-            'pernode':    build(lambda i: cstar_loss[i]),
-            'lisapareto': build(lambda i: cstar_lisa[i]),
-            'best_c': best_c, 'cstar_loss': cstar_loss, 'cstar_lisa': cstar_lisa}
+    return {'lisapareto': build(lambda i: cstar_lisa[i]),
+            'best_c': best_c, 'cstar_lisa': cstar_lisa}

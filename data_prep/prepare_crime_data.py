@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 # ── paths ──────────────────────────────────────────────────────────────────────
-RAW_BASE = "C:/Users/luisg/Bigscity-LibCity-master/raw_data"   # raw LibCity source (edit for your machine)
+RAW_BASE = "./raw/libcity"   # raw LibCity source dir (override with --raw-base)
 OUT_DIR   = "./data"
 
 # ── default sigma per dataset (tuned to distance distributions) ────────────────

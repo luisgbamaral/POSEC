@@ -1,0 +1,25 @@
+# Reproducible environment for POSEC.
+#   conda env create -f environment.yml
+#   conda activate posec
+#
+# The CUDA runtime for TensorFlow 2.10 (cudatoolkit 11.2 + cudnn 8.1) is installed
+# by conda into the env; activating the env puts the CUDA DLLs on PATH, so TF sees
+# the GPU with no extra setup. (Without them TF silently falls back to CPU.)
+name: posec
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - cudatoolkit=11.2
+  - cudnn=8.1.0
+  - pip
+  - pip:
+      - tensorflow==2.10.0
+      - numpy==1.23.5
+      - pandas==1.5.3
+      - scipy==1.9.3
+      - scikit-learn==1.6.1
+      - statsmodels==0.14.6
+      - joblib==1.5.3
+      - matplotlib==3.9.4
+      - pytest

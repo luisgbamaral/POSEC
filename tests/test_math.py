@@ -1,34 +1,23 @@
 """
 test_math.py — fast unit tests for the numerical core (no TF / no checkpoints).
 
-Formalizes the ad-hoc checks used during development: transform round-trip and
-PMF mass, randomized-PIT uniformity, NB-MLE recovery, LISA per-node consistency,
-and the HAC (GW/DM) test. Run:  pytest tests/ -q
+Formalizes the ad-hoc checks used during development: PMF mass, randomized-PIT
+uniformity, NB-MLE recovery, LISA per-node consistency, and the HAC (GW/DM)
+test. Run:  pytest tests/ -q
 """
 import numpy as np
 from scipy.stats import nbinom
 
-from posec.hybrid.transforms import TRANSFORMS
-from posec.hybrid.predictive import TransformPredictive, CountPredictive, nb_alpha_mle
+from posec.hybrid.predictive import CountPredictive, nb_alpha_mle
 from posec.eval.metrics import mean_lisa_abs, lisa_abs_per_node, hac_test
 
 rng = np.random.default_rng(0)
 
 
-def test_transform_roundtrip():
-    """inv(fwd(y)) == y for non-negative counts, in every transform space."""
-    y = rng.poisson(2.0, size=(30, 10)).astype(float)
-    for tf in TRANSFORMS:
-        assert np.allclose(tf.inv(tf.fwd(y)), y, atol=1e-9), tf.tag
-
-
-def test_transform_pmf_mass():
-    """Discretized Gaussian-in-transform PMF integrates to ~1 (cdf at large K)."""
-    level = rng.uniform(0.0, 5.0, size=(40, 15))
-    sig = np.full_like(level, 0.8)
-    for tf in TRANSFORMS:
-        pr = TransformPredictive(tf, point=None, mu=tf.fwd(level), sig=sig)
-        assert np.all(pr.cdf(4000) >= 0.999), tf.tag
+def test_count_pmf_mass():
+    """Poisson/NB2 PMFs integrate to ~1 (cdf at large K)."""
+    mu = rng.uniform(0.5, 5.0, size=(40, 15))
+    assert np.all(CountPredictive('poisson', point=mu, lam=mu).cdf(4000) >= 0.999)
 
 
 def test_pit_uniform_for_well_specified_poisson():

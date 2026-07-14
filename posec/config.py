@@ -37,3 +37,17 @@ OUT_DIR = './results/probabilistic'
 # ── smoke test: isolated POA_CRIME/stgcn for fast golden-regression checks ───
 if os.environ.get('SMOKE'):
     CITIES, BACKBONES = [('POA_CRIME', 94)], ['stgcn']
+
+# ── env overrides for the overnight pipeline (run different dataset sets / splits) ──
+# POSEC_CITIES="CHI_CRIME:1400,SP_CRIME_7D:1445"   POSEC_NVAL=16 POSEC_NTEST=16
+if os.environ.get('POSEC_CITIES'):
+    CITIES = [(p.split(':')[0], int(p.split(':')[1]))
+              for p in os.environ['POSEC_CITIES'].split(',') if p]
+if os.environ.get('POSEC_BACKBONES'):
+    BACKBONES = os.environ['POSEC_BACKBONES'].split(',')
+if os.environ.get('POSEC_NVAL'):
+    N_VAL = int(os.environ['POSEC_NVAL'])
+if os.environ.get('POSEC_NTEST'):
+    N_TEST = int(os.environ['POSEC_NTEST'])
+if os.environ.get('POSEC_OUT'):
+    OUT_DIR = os.environ['POSEC_OUT']

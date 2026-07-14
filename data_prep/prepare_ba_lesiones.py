@@ -34,9 +34,11 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 # ── Caminhos ───────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-INPUT_2023   = "C:/Users/luisg/Downloads/delitos_2023.xlsx"
-INPUT_2024   = "C:/Users/luisg/Downloads/delitos_2024.xlsx"
-RAW_OUT_DIR  = os.path.join("C:/Users/luisg/Bigscity-LibCity-master/raw_data", "BA_LESIONES")
+# Raw sources (Buenos Aires open crime data) are not redistributable here;
+# place them under ./raw/ and point these at them.
+INPUT_2023   = "./raw/BA_delitos_2023.xlsx"
+INPUT_2024   = "./raw/BA_delitos_2024.xlsx"
+RAW_OUT_DIR  = os.path.join("./raw/libcity", "BA_LESIONES")
 DATASET_DIR  = os.path.join(SCRIPT_DIR, "dataset")
 DATASET_NAME = "BA_LESIONES"
 TIPO_FILTER  = "Lesiones"
