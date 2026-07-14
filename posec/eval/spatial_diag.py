@@ -24,7 +24,7 @@ from scipy.stats import norm
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import shortest_path
 
-from posec.config import CITIES, BACKBONES, OWN_LAGS, SP_LAGS, OUT_DIR, DATA_DIR
+from posec.config import CITIES, BACKBONES, GATE_FRAC, OUT_DIR, DATA_DIR
 from posec.eval.probabilistic import load_backbone
 from posec.hybrid.guardia import guardia_predict
 from posec.eval.plotting import set_style
@@ -99,7 +99,7 @@ def method_preds(ds, N, bk, Wr):
     (y_tr, p_tr), (y_va, p_va), (y_te, p_te) = data['train'], data['val'], data['test']
     preds = {'base': p_te}
     preds['posec'] = np.maximum(
-        guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N)['lisapareto'][0], 0.0)
+        guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N, gate_frac=GATE_FRAC)['lisapareto'][0], 0.0)
     return y_te, preds
 
 

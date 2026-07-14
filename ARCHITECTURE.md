@@ -28,7 +28,8 @@ checkpoints/ ──► posec.models.infer ──► backbone predictions ŷ  (fr
 Single source of truth: cities (SP/POA/BA/Chicago + weekly `*_7D`), backbones,
 split sizes, NB grid, POSEC settings (gate loss, EB pool min nodes, parallel
 jobs), paths. Env overrides drive `reproduce.py`: `POSEC_CITIES`, `POSEC_NVAL`,
-`POSEC_NTEST`, `POSEC_OUT`, `POSEC_BACKBONES`; `SMOKE=1` restricts to POA/stgcn.
+`POSEC_NTEST`, `POSEC_GATE_FRAC`, `POSEC_OUT`, `POSEC_BACKBONES`; `SMOKE=1`
+restricts to POA/stgcn.
 
 ### `posec/models/` — backbones
 - `base_model.py`, `layers.py`, `trainer.py`, `tester.py` — STGCN and the SAEA
@@ -51,6 +52,9 @@ jobs), paths. Env overrides drive `reproduce.py`: `POSEC_CITIES`, `POSEC_NVAL`,
   dose), with degenerate cells falling back to the global-knee `best_c`; a
   per-node gate keeps the backbone wherever calibration does not beat it on
   validation. Returns the `lisapareto` prediction (`mu_te, mu_va, s_i`).
+  `gate_frac>0` splits validation into a dose block (val1) and a **disjoint** gate
+  block (val2) so the gate is independent of dose selection (weekly, short series);
+  `gate_frac=0` (daily) is the single-validation gate.
 - **`predictive.py`** — every method is scored as a discrete distribution over
   integer counts. `Predictive` (shared: pmf via cdf differences, log score,
   randomized PIT, central-interval coverage); `CountPredictive` (native

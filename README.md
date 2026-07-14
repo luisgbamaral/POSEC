@@ -96,6 +96,12 @@ diagnostics — `spatial_diag.csv` + `figs/` (Pesaran CD, hop correlograms, ECM 
 A column-by-column `README.md` is written next to the CSVs. **Methods scored (3):**
 `base+Poisson`, `base+NB`, `guardia-lisac+NB` (proposed).
 
+**Protocol.** Daily experiments use `n_his=7` with a chronological 110/110 val/test
+split and a single-validation gate. The weekly experiment uses `n_his=6` (monthly
+memory) with a chronological **60/20/10/10** split — train / dose-validation /
+gate-validation / test — where the per-cell gate is applied on a **disjoint** block
+(`gate_frac=1/3`), making it an independent test.
+
 ## 6. Determinism
 
 - Stochastic steps are seeded (`np.random.seed(0)` for the randomized PIT and the
@@ -110,7 +116,8 @@ A column-by-column `README.md` is written next to the CSVs. **Methods scored (3)
 Everything lives in **`posec/config.py`**: cities, backbones, split sizes, NB
 dispersion grid, POSEC gate loss (`GUARDIA_GATE`), EB pool size, parallel jobs,
 paths. Env overrides (used by `reproduce.py`): `POSEC_CITIES="NAME:N,..."`,
-`POSEC_NVAL`, `POSEC_NTEST`, `POSEC_OUT`, `POSEC_BACKBONES`, and `SMOKE=1`.
+`POSEC_NVAL`, `POSEC_NTEST`, `POSEC_GATE_FRAC`, `POSEC_OUT`, `POSEC_BACKBONES`,
+and `SMOKE=1`.
 
 ## 8. Tests
 

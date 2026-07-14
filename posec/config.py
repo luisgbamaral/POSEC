@@ -26,6 +26,10 @@ ALPHA_GRID = np.logspace(-4, 1, 60)
 # ── GUARD IA: EB pool min nodes, parallel jobs, gate/Pareto loss ─────────────
 EB_MIN, GUARDIA_NJOBS, GUARDIA_GATE = 20, 4, 'mse'
 
+# ── Independent gate: fraction of validation held out (val2) to gate the dose
+# selected on val1. 0.0 = single-validation gate (daily); >0 splits val (weekly).
+GATE_FRAC = 0.0
+
 # ── Anscombe offset ──────────────────────────────────────────────────────────
 A_ANS = 0.375
 
@@ -51,3 +55,5 @@ if os.environ.get('POSEC_NTEST'):
     N_TEST = int(os.environ['POSEC_NTEST'])
 if os.environ.get('POSEC_OUT'):
     OUT_DIR = os.environ['POSEC_OUT']
+if os.environ.get('POSEC_GATE_FRAC'):
+    GATE_FRAC = float(os.environ['POSEC_GATE_FRAC'])

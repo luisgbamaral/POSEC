@@ -85,5 +85,8 @@ if __name__ == '__main__':
     os.makedirs(model_dir, exist_ok=True)
     if not args.test_only:
         model_train(PeMS, blocks, args, model_dir=model_dir)
+        import json
+        json.dump({'n_his': args.n_his, 'n_val_days': args.n_val_days, 'n_test_days': args.n_test_days},
+                  open(pjoin(model_dir, 'split_meta.json'), 'w'))
     model_test(PeMS, PeMS.get_len('test'), n_his, n_pred, args.inf_mode, args.step_p, args.saea,
                load_path=model_dir, dataset=args.dataset)

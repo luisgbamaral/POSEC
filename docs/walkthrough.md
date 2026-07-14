@@ -118,9 +118,19 @@ dataset. A **weekly** variant of each (`*_7D`) sums counts into non-overlapping
 7-day blocks — the model then predicts **next week as a single step** (7-day-ahead
 aggregated forecast).
 
-**Splits.** Strictly chronological, no shuffling: the last 110 days are test, the
-preceding 110 are validation, the remainder is training (16/16 **weeks** for the
-weekly variant). Normalisation statistics come from the training portion only.
+**Splits & memory.** Strictly chronological, no shuffling; normalisation
+statistics come from the training portion only.
+- *Daily* (main / chicago): `n_his = 7` (weekly cycle); last 110 days = test,
+  preceding 110 = validation, remainder = training. The per-cell gate is decided
+  on that single validation block.
+- *Weekly*: aggregation removes the day-of-week cycle, so we use `n_his = 6`
+  (~monthly memory; also the minimum the STGCN backbone admits). Because the series
+  is short (104–156 weeks) and
+  POSEC selects a per-cell dose **and** gate, we use a chronological **60/20/10/10**
+  split — **train / dose-validation / gate-validation / test**. The dose is
+  selected on the dose block and the per-cell gate is applied on a **disjoint**
+  gate block (`gate_frac = 1/3` of the 30% validation), so the gate is an
+  independent test rather than re-using the dose-selection data.
 
 **Backbones.** STGCN, Graph-WaveNet, STHSL, all **MSE-trained** (mean-targeting) on
 the unified SAEA protocol (RMSProp, LR decay, `n_his=7`, `n_pred=1`), one-step-ahead.
@@ -130,7 +140,9 @@ POSEC wraps them with frozen weights — it never sees the backbone's training.
 dose and gate are selected on **validation** only; **test** enters exclusively
 through the lagged *observed* residuals ε_{t−1}, (Wε)_{t−1} (the val→test boundary
 uses the last observed validation day). Nothing from the test period touches
-estimation or model selection.
+estimation or model selection. As a guard, each backbone records its training
+split (`split_meta.json`) and evaluation **asserts** it matches, so a backbone can
+never be scored on days it was trained on.
 
 **Metrics.** (i) *Probabilistic:* **ALS**, the mean discrete log score on a unified
 integer PMF (headline, lower = better); randomized-PIT histograms and 80/95%

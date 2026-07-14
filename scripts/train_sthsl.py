@@ -456,3 +456,9 @@ evl      = evaluation(gt, pred_arr, PeMS.get_stats())
 print(f'STHSL  MAPE={evl[0]:.3%}  MAE={evl[1]:.4f}  RMSE={evl[2]:.4f}')
 np.save(pred_path, pred_arr)
 print(f'Saved → {pred_path}')
+
+# record the training split for the anti-leak conformance assert at eval time
+if not args.test_only:
+    import json as _json
+    _json.dump({'n_his': args.n_his, 'n_val_days': args.n_val_days, 'n_test_days': args.n_test_days},
+               open(pjoin(model_dir, 'split_meta.json'), 'w'))

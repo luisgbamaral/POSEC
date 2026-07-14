@@ -50,32 +50,40 @@ significant Moran's I (as in SP); corr_h₁ drops in all three, CD in two of thr
 
 ## 3. Weekly (7-day-ahead, single step)
 
+Protocol: `n_his=6` (monthly memory), chronological **60/20/10/10** split
+(train / dose-validation / gate-validation / test) with an **independent** per-cell
+gate (`gate_frac=1/3`); the backbones are retrained under this split.
+
 | Cell | base+NB | POSEC | ΔALS | GW t | CD base→POSEC | corr_h₁ base→POSEC |
 |---|---|---|---|---|---|---|
-| SP_7D / stgcn      | 1.121 | **1.076** | +4.0% | −2.4 * | 406 → **95** | 0.108 → **0.033** |
-| SP_7D / gwavenet   | 1.090 | **1.051** | +3.5% | −7.2 *** | 44.5 → **13.3** | 0.030 → **0.009** |
-| SP_7D / sthsl      | 1.434 | **1.067** | +25.6% | −30.0 *** | 17.0 → 19.7 | 0.012 → 0.012 |
-| CHI_7D / stgcn     | 2.081 | **2.074** | +0.3% | −2.0 * | 22.7 → 19.7 | 0.033 → 0.025 |
-| CHI_7D / gwavenet  | 2.194 | **2.110** | +3.8% | −8.7 *** | 17.6 → 19.7 | 0.022 → 0.020 |
-| CHI_7D / sthsl     | 2.937 | **2.200** | +25.1% | −33.3 *** | 39.2 → **22.4** | 0.038 → 0.028 |
-| POA_7D / stgcn     | 2.888 | **2.824** | +2.2% | −2.7 ** | 16.3 → 17.7 | 0.116 → 0.123 |
-| POA_7D / gwavenet  | 3.603 | **2.898** | +19.6% | −6.3 *** | 17.8 → 20.0 | 0.135 → 0.135 |
-| POA_7D / sthsl     | 3.972 | **3.078** | +22.5% | −25.6 *** | 22.2 → 18.4 | 0.157 → 0.135 |
-| BA_7D / stgcn      | 1.493 | **1.445** | +3.2% | −1.1 n.s. | 2.6 → 0.6 | 0.016 → 0.003 |
-| BA_7D / gwavenet   | 1.537 | **1.486** | +3.4% | −1.9 n.s. | −0.5 → −0.5 | −0.004 → −0.004 |
-| BA_7D / sthsl      | 1.978 | **1.664** | +15.8% | −6.7 *** | −1.0 → 1.6 | −0.005 → 0.007 |
+| SP_7D / stgcn      | 1.146 | **1.099** | +4.1% | −2.7 ** | 423 → **149** | 0.108 → **0.045** |
+| SP_7D / gwavenet   | 1.116 | **1.079** | +3.2% | −8.3 *** | 21 → **13** | 0.018 → **0.010** |
+| SP_7D / sthsl      | 1.451 | **1.079** | +25.6% | −30.1 *** | 9 → 12 | 0.010 → 0.009 |
+| CHI_7D / stgcn     | 2.098 | 2.099 | −0.1% | +0.5 n.s. | 14 → 14 | 0.031 → 0.020 |
+| CHI_7D / gwavenet  | 2.128 | **2.121** | +0.3% | −0.7 n.s. | 13 → 16 | 0.023 → 0.017 |
+| CHI_7D / sthsl     | 2.893 | **2.129** | +26.4% | −39.6 *** | 60 → **24** | 0.052 → **0.027** |
+| POA_7D / stgcn     | 2.880 | **2.854** | +0.9% | −1.3 n.s. | 18 → 21 | 0.157 → 0.170 |
+| POA_7D / gwavenet  | 3.288 | **3.059** | +7.0% | −1.3 n.s. | 19 → 23 | 0.181 → 0.178 |
+| POA_7D / sthsl     | 3.905 | **2.859** | +26.8% | −10.8 *** | 30 → 19 | 0.232 → 0.173 |
+| BA_7D / stgcn      | 1.450 | **1.396** | +3.7% | −3.3 ** | 0 → 0 | 0.001 → −0.005 |
+| BA_7D / gwavenet   | 1.492 | **1.425** | +4.5% | −2.2 * | −1 → −1 | −0.008 → −0.012 |
+| BA_7D / sthsl      | 1.934 | **1.573** | +18.7% | −22.4 *** | 0 → 1 | −0.001 → 0.011 |
 
-POSEC improves ALS in **12/12** weekly cells (significant in 10/12; the two n.s. are
-Bahía, whose weekly residuals already carry almost no spatial dependence — CD ≈ 0,
-so there is little to whiten and the change is within noise). The largest gains come
-where a backbone is badly calibrated on the sparse weekly series (STHSL: **+25%**),
-where the NB calibration rescues an over-confident predictive.
+POSEC improves ALS in **11/12** weekly cells (CHI_7D/stgcn is flat, −0.1% n.s.),
+significant in **8/12**. The largest gains are again where a backbone is badly
+calibrated on the sparse weekly series (STHSL: **+19–27%**), where the NB calibration
+rescues an over-confident predictive. Whitening is strongest on São Paulo/stgcn
+(CD 423→149, corr_h₁ 0.108→0.045) and Chicago/sthsl (60→24); on Porto Alegre the
+residual dependence is high and persistent and POSEC does not remove it (CD rises
+slightly). The independent gate (dose on val1, gate on the disjoint val2) leaves the
+scores essentially unchanged vs a single-validation gate — the per-cell dose signal
+is weak, consistent with §4.
 
 ## 4. Takeaways
 
-1. **POSEC improves the probabilistic score everywhere** (24/24 cells; significant
-   in 22/24), by **+0.3% to +25.6%** ALS over the fair NB baseline. Biggest gains
-   where the backbone is worst calibrated (STHSL, weekly).
+1. **POSEC improves the probabilistic score almost everywhere** (23/24 cells; one
+   flat), significant in 20/24, by **+0.3% to +26.8%** ALS over the fair NB
+   baseline. Biggest gains where the backbone is worst calibrated (STHSL, weekly).
 2. **It attacks the spatial error the backbone leaves behind.** On the large,
    strongly-dependent graphs it cuts Pesaran CD ~3–4× (São Paulo daily and weekly)
    and nearest-neighbour residual correlation ~3×. Where residual dependence is weak
@@ -85,11 +93,12 @@ where the NB calibration rescues an over-confident predictive.
    frozen STGCN / Graph-WaveNet / STHSL, with a per-cell gate that never degrades a
    well-behaved cell.
 
-> **Known issue (not fixed by request):** on `SP_CRIME_7D / stgcn` the POSEC point
-> MAE blows up (~1e8) for a single cell — an `exp()` overflow in the per-cell GLM on
-> a sparse weekly series that passed the validation gate but diverged on test. The
-> **ALS is unaffected** (bounded NB log score) and no other cell/metric is touched;
-> a dose/prediction cap would fix it.
+> **Known issue (kept by design — no prediction cap):** on `SP_CRIME_7D / gwavenet`
+> the POSEC point MAE blows up (~7e8) for a single cell — an `exp()` overflow in the
+> per-cell GLM on a sparse weekly series that passes the gate but diverges on test.
+> The independent gate reduced this (it moved off `stgcn`, which is now clean) but
+> does not eliminate it; we deliberately keep no prediction cap. The **ALS is
+> unaffected** (bounded NB log score) and no other cell/metric is touched.
 
 > Reproducibility: deterministic up to ~1e-6 TF32 GPU-inference noise; see the README
 > determinism section and `tests/test_golden.py`.

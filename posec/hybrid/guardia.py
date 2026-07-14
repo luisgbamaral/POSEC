@@ -8,7 +8,7 @@ from posec.hybrid.glm import fit_one_node
 
 
 def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
-                    gate_loss=GUARDIA_GATE, njobs=GUARDIA_NJOBS):
+                    gate_loss=GUARDIA_GATE, njobs=GUARDIA_NJOBS, gate_frac=0.0):
     """POSEC calibration: per-cell Poisson-GLM with a per-node Pareto-optimal,
     gated spatial-lag dose (Pareto-Optimal Spatial Error Calibration).
 
@@ -50,29 +50,38 @@ def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
     mu_beta = np.mean([nd[i]['beta_calib'] for i in conv], 0); cset = set(conv)
     beta_raw = {i: (nd[i]['beta_calib'].copy() if i in cset else mu_beta.copy()) for i in range(N)}
     base_va = np.column_stack([np.exp(nd[i]['off_va']) for i in range(N)])  # (T_va, N)
-    base_ref = _lossN(y_va, base_va)                                        # (N,) base val loss
+    # Split validation into a dose-selection block (val1) and an independent gate
+    # block (val2). gate_frac=0 -> both are the full val => byte-identical to the
+    # single-validation gate (the daily protocol).
+    T_va = base_va.shape[0]
+    kd = T_va if gate_frac <= 0 else max(1, int(round(T_va * (1.0 - gate_frac))))
+    dsl = slice(0, kd)                                        # dose selection (val1)
+    gsl = slice(0, T_va) if gate_frac <= 0 else slice(kd, T_va)  # gate (val2)
+    base_ref_d = _lossN(y_va[dsl], base_va[dsl])             # base loss on val1
+    base_ref_g = _lossN(y_va[gsl], base_va[gsl])             # base loss on val2
     Xva_ok = np.array([nd[i].get('X_va_calib') is not None for i in range(N)])
     scales = np.round(np.arange(0.0, 2.05, 0.10), 2); K = len(scales)
 
-    def vpred(i, c):
+    def vpred(i, c, sl=slice(None)):
         b = beta_raw[i].copy(); b[3] *= c
-        return np.maximum(np.exp(np.clip(nd[i]['X_va_calib'] @ b, -30, 30)), 0.0)
+        return np.maximum(np.exp(np.clip(nd[i]['X_va_calib'][sl] @ b, -30, 30)), 0.0)
     def tpred(i, c):
         b = beta_raw[i].copy(); b[3] *= c
         return np.maximum(np.exp(np.clip(nd[i]['X_te_calib'] @ b, -30, 30)), 0.0)
 
-    # ── sweep ONCE: per-node GATED loss curve L and per-node |LISA| curve A ──
+    # ── sweep ONCE on val1: per-node GATED loss curve L and |LISA| curve A ──
+    y_d, base_d = y_va[dsl], base_va[dsl]
     L = np.zeros((K, N)); A = np.zeros((K, N))
     for k, c in enumerate(scales):
-        pv = base_va.copy()
+        pv = base_d.copy()
         for i in range(N):
             if not Xva_ok[i]: continue
-            v = vpred(i, c)
-            if _loss1(y_va[:, i], v) < base_ref[i]: pv[:, i] = v
-        L[k] = _lossN(y_va, pv)
-        A[k] = lisa_abs_per_node(y_va, pv, Wr)
+            v = vpred(i, c, dsl)
+            if _loss1(y_d[:, i], v) < base_ref_d[i]: pv[:, i] = v
+        L[k] = _lossN(y_d, pv)
+        A[k] = lisa_abs_per_node(y_d, pv, Wr)
         if k == 0:
-            assert np.isclose(A[0].mean(), mean_lisa_abs(y_va, pv, Wr), rtol=1e-5), \
+            assert np.isclose(A[0].mean(), mean_lisa_abs(y_d, pv, Wr), rtol=1e-5), \
                 "lisa_abs_per_node inconsistent with mean_lisa_abs"
 
     # ── GLOBAL best_c: Pareto knee on aggregate (loss, |LISA|) derived from L,A ──
@@ -106,16 +115,17 @@ def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
         ani = (ai[Pi] - ai.min()) / max(ar, 1e-12)
         cstar_lisa[i] = scales[Pi[int(np.argmin(np.sqrt(lni ** 2 + ani ** 2)))]]
 
-    # ── assemble per c-mode (per-node gate kept as safety net, NO cap) ──
+    # ── assemble: dose per cell, INDEPENDENT gate on val2 (per-node safety net) ──
+    y_g = y_va[gsl]
     def build(c_of):
         mte = np.zeros((y_te.shape[0], N)); mva = base_va.copy(); si = np.zeros(N)
         for i in range(N):
             ndi = nd[i]
             if (not Xva_ok[i]) or ndi.get('X_te_calib') is None:
                 mte[:, i] = ndi['pred_te_base']; continue
-            c = c_of(i); v = vpred(i, c)
-            if _loss1(y_va[:, i], v) < base_ref[i]:
-                mte[:, i] = tpred(i, c); mva[:, i] = v; si[i] = 1.0
+            c = c_of(i)
+            if _loss1(y_g[:, i], vpred(i, c, gsl)) < base_ref_g[i]:
+                mte[:, i] = tpred(i, c); mva[:, i] = vpred(i, c); si[i] = 1.0
             else:
                 mte[:, i] = ndi['pred_te_base']
         return mte, mva, si

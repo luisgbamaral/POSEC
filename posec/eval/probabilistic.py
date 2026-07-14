@@ -16,7 +16,7 @@ import numpy as np
 import os
 import pandas as pd
 import sys
-from posec.config import ALPHA_GRID, BACKBONES, BATCH, CITIES, GUARDIA_GATE, CKPT_DIR, DATA_DIR, N_TEST, N_VAL, OUT_DIR
+from posec.config import ALPHA_GRID, BACKBONES, BATCH, CITIES, GATE_FRAC, GUARDIA_GATE, CKPT_DIR, DATA_DIR, N_TEST, N_VAL, OUT_DIR
 from posec.data.data_utils import data_gen_crime
 from posec.eval.metrics import hac_test, mae, rmse, spatial_metrics
 from posec.hybrid.guardia import guardia_predict
@@ -35,6 +35,16 @@ def load_backbone(ds, N, bk):
     if not os.path.isdir(ckpt_dir):
         print(f"  [SKIP] {ds}/{bk}: dir not found ({ckpt_dir})"); return None
     ckpt = _find_ckpt(ckpt_dir, bk); n_his = _detect_n_his(ckpt) or 7
+    # anti-leak guard: the backbone's training split must match the evaluation split,
+    # else days POSEC treats as test may have been in the backbone's training set.
+    _mp = pjoin(ckpt_dir, 'split_meta.json')
+    if os.path.exists(_mp):
+        import json as _json
+        _m = _json.load(open(_mp))
+        assert (_m['n_val_days'], _m['n_test_days'], _m['n_his']) == (N_VAL, N_TEST, n_his), \
+            (f"[SPLIT MISMATCH] {ds}/{bk}: checkpoint trained with "
+             f"val/test/n_his={(_m['n_val_days'], _m['n_test_days'], _m['n_his'])} but evaluating with "
+             f"{(N_VAL, N_TEST, n_his)} — possible leakage. Retrain with the matching split.")
     PeMS = data_gen_crime(pjoin(DATA_DIR, f'{ds}_V.csv'), None, N_VAL, N_TEST, N, n_his + 1)
     st = PeMS.get_stats(); inv = lambda z: z_inverse(z, st['mean'], st['std'])
     out = {}
@@ -73,7 +83,7 @@ def main():
             M['base+NB'] = (CountPredictive('nb', p_te, n=n_nb, pp=n_nb/(n_nb+mu_te)), p_te, None)
 
             # POSEC: per-cell Poisson calibration + per-node Pareto dose, NB-wrapped
-            gres = guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N)
+            gres = guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N, gate_frac=GATE_FRAC)
             mte, mva, si = gres['lisapareto']
             mte = np.maximum(mte, 1e-6)
             ag = nb_alpha_mle(yva_int, np.maximum(mva, 1e-6)); ng = 1.0 / ag
