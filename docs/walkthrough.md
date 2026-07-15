@@ -2,7 +2,7 @@
 
 A guided tour of *why* POSEC exists, *how* the code produces every number, and the
 *experimental protocol* behind the results. For the formal method (with formulas)
-see [method_guardia.md](method_guardia.md); for the tables see [RESULTS.md](RESULTS.md).
+see [method.md](method.md); for the tables see [RESULTS.md](RESULTS.md).
 
 ---
 
@@ -64,7 +64,7 @@ back to counts and clamped ≥ 0. **Backbones are MSE-trained → mean-targeting
 For train/val/test it returns `(y, ŷ)` in count space; the residual panel is
 ε = y − ŷ and its spatial lag is (Wε) with `W` row-normalised.
 
-**5. Per-cell calibration GLM — `posec/hybrid/glm.py`.**
+**5. Per-cell calibration GLM — `posec/calib/glm.py`.**
 For every cell *i*, `fit_one_node` fits by Poisson IRLS (**training data only**):
 
     log E[y_it] = β0 + α·log(ŷ_it) + β1·ε_{i,t−1} + β2·(Wε)_{i,t−1}
@@ -74,7 +74,7 @@ residual regressors are **lagged** (t−1), so a one-step-ahead forecast never n
 contemporaneous neighbour values. Cells whose GLM fails fall back to the
 population-mean coefficients.
 
-**6. Dose, Pareto knee, and gate — `posec/hybrid/guardia.py`.**
+**6. Dose, Pareto knee, and gate — `posec/calib/calibration.py`.**
 The spatial-lag coefficient β2 is scaled by a **dose** c ∈ [0, 2]. Sweeping c on
 the **validation** set records, per cell, a gated loss curve `L[c,i]` and a local
 Moran (|LISA|) curve `A[c,i]`. The proposed dose is the **per-node Pareto knee** of
@@ -83,16 +83,16 @@ spatial autocorrelation (`cstar_lisa`); degenerate cells fall back to the global
 knee. A per-cell **gate** keeps the raw backbone wherever calibration does not beat
 it on validation (`s_i = 0`), bounding the worst case.
 
-**7. Predictive distribution — `posec/hybrid/predictive.py`.**
+**7. Predictive distribution — `posec/calib/predictive.py`.**
 Every method is reduced to a **discrete distribution over integer counts** so log
 scores are comparable. `CountPredictive` gives native Poisson / NB2; `nb_alpha_mle`
 estimates the NB dispersion by grid MLE on validation. The calibrated mean is scored
-as **NB2** (`guardia-lisac+NB`) because crime counts are over-dispersed. The base
+as **NB2** (`posec`) because crime counts are over-dispersed. The base
 class provides the discrete log score, randomized PIT, and central-interval coverage.
 
 **8. Scoring — `posec/eval/probabilistic.py` + `metrics.py`.**
 For each city × backbone it scores three methods — `base+Poisson`, `base+NB`
-(raw-backbone baselines) and `guardia-lisac+NB` (proposed) — on ALS (mean discrete
+(raw-backbone baselines) and `posec` (proposed) — on ALS (mean discrete
 log score, the headline), MAE/RMSE, PAI@k, and Moran's I of the residuals, plus
 Giacomini-White / Diebold-Mariano significance with Newey-West HAC variance. Writes
 `als_master.csv`, `gw_dm_tests.csv`, `calibration.csv`, `per_node.csv`.

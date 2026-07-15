@@ -8,7 +8,7 @@ test. Run:  pytest tests/ -q
 import numpy as np
 from scipy.stats import nbinom
 
-from posec.hybrid.predictive import CountPredictive, nb_alpha_mle
+from posec.calib.predictive import CountPredictive, nb_alpha_mle
 from posec.eval.metrics import mean_lisa_abs, lisa_abs_per_node, hac_test
 
 rng = np.random.default_rng(0)

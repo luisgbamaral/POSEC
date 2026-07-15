@@ -6,7 +6,7 @@ Poisson-GLM that treats the backbone prediction as a covariate, then chooses how
 much spatial-lag correction each cell receives at the **per-node Pareto knee** of
 (validation loss × local spatial autocorrelation |LISA|), behind a per-cell
 **gate**; the calibrated mean is scored as a Negative-Binomial distribution
-(`guardia-lisac+NB`, the proposed model). Evaluated against the raw backbone
+(`posec`, the proposed model). Evaluated against the raw backbone
 (`base+Poisson`, `base+NB`) on four crime datasets — São Paulo, Porto Alegre,
 Bahía, Chicago — with a unified discrete log score (ALS), point error (MAE/RMSE),
 PAI hotspot concentration, Moran's I and residual cross-sectional-dependence
@@ -16,7 +16,7 @@ provided.
 **This README is the replication guide.** For the code architecture and the
 module ↔ method mapping, see [ARCHITECTURE.md](ARCHITECTURE.md). For the method
 and experimental protocol in short-paper form (with formulas), see
-[docs/method_guardia.md](docs/method_guardia.md). For the results tables and
+[docs/method.md](docs/method.md). For the results tables and
 analysis, see [docs/RESULTS.md](docs/RESULTS.md).
 
 ---
@@ -94,7 +94,7 @@ Each produces `als_master.csv` (ALS/MAE/RMSE/MI/PAI per method), `gw_dm_tests.cs
 `per_node.csv` (per-cell errors + POSEC doses/gates for maps), and — from the
 diagnostics — `spatial_diag.csv` + `figs/` (Pesaran CD, hop correlograms, ECM maps).
 A column-by-column `README.md` is written next to the CSVs. **Methods scored (3):**
-`base+Poisson`, `base+NB`, `guardia-lisac+NB` (proposed).
+`base+Poisson`, `base+NB`, `posec` (proposed).
 
 **Protocol.** Daily experiments use `n_his=7` with a chronological 110/110 val/test
 split and a single-validation gate. The weekly experiment uses `n_his=6` (monthly
@@ -114,7 +114,7 @@ gate-validation / test — where the per-cell gate is applied on a **disjoint** 
 ## 7. Configuration
 
 Everything lives in **`posec/config.py`**: cities, backbones, split sizes, NB
-dispersion grid, POSEC gate loss (`GUARDIA_GATE`), EB pool size, parallel jobs,
+dispersion grid, POSEC gate loss (`GATE_LOSS`), EB pool size, parallel jobs,
 paths. Env overrides (used by `reproduce.py`): `POSEC_CITIES="NAME:N,..."`,
 `POSEC_NVAL`, `POSEC_NTEST`, `POSEC_GATE_FRAC`, `POSEC_OUT`, `POSEC_BACKBONES`,
 and `SMOKE=1`.

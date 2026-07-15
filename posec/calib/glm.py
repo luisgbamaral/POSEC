@@ -1,4 +1,4 @@
-"""glm.py — per-cell Poisson calibration GLM (the GUARD IA engine).
+"""glm.py — per-cell Poisson calibration GLM (the POSEC calibration engine).
 
 For each cell i, fit by MLE (statsmodels IRLS) the calibration model
 
@@ -11,7 +11,7 @@ time-lagged (no contemporaneous neighbour values).
 
 Anti-leak: estimation uses TRAINING data only; the validation/test design
 matrices are merely returned, for the gating and dose sweep in
-`posec.hybrid.guardia`.
+`posec.calib.calibration`.
 
 `fit_one_node` returns (nid, nd) where nd holds:
   beta_calib    (4,) MLE params, or None if the GLM failed / params invalid

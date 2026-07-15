@@ -1,6 +1,6 @@
 # Results
 
-POSEC (`guardia-lisac+NB`) against the raw-backbone baselines (`base+Poisson`,
+POSEC (`posec`) against the raw-backbone baselines (`base+Poisson`,
 `base+NB`) on four crime datasets × three MSE-trained backbones (STGCN,
 Graph-WaveNet, STHSL), reproduced with `python scripts/reproduce.py`. All numbers
 are from `results/{probabilistic,chi_daily,all_7d}/`.

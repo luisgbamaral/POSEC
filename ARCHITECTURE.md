@@ -10,10 +10,10 @@ data/{CITY}_V.csv ──► posec.data.data_utils ──► z-scored windows (tr
                                  │
 checkpoints/ ──► posec.models.infer ──► backbone predictions ŷ  (frozen weights)
                                  │
-                                 │  POSEC / GUARD IA
-                                 │  posec.hybrid.glm       (per-cell Poisson calibration)
-                                 │  posec.hybrid.guardia   (dose sweep + gate)
-                                 │  posec.hybrid.predictive (discrete distributions)
+                                 │  POSEC calibration
+                                 │  posec.calib.glm       (per-cell Poisson calibration)
+                                 │  posec.calib.calibration   (dose sweep + gate)
+                                 │  posec.calib.predictive (discrete distributions)
                                  │
                   posec.eval.probabilistic  (scores all methods)
                   posec.eval.metrics        (ALS/MAE/RMSE/Moran/PAI/HAC)
@@ -39,14 +39,14 @@ restricts to POA/stgcn.
   output tensor per model) and frozen-weight inference. **Adding a backbone =
   registering it here** + a checkpoint dir following `_DEFAULT_SUBDIR`.
 
-### `posec/hybrid/` — the calibration method
-- **`glm.py`** — the GUARD IA engine: per-cell Poisson calibration GLM
+### `posec/calib/` — the calibration method
+- **`glm.py`** — the POSEC engine: per-cell Poisson calibration GLM
 
       log E[y_it] = β0 + α·log(ŷ_it) + β1·ε_{i,t−1} + β2·(Wε)_{i,t−1}
 
   (ŷ as a *free* covariate: α≠1 absorbs systematic bias). Training data only.
   `fit_one_node` returns the MLE params + val/test design matrices for the sweep.
-- **`guardia.py`** — dose and gate on top of the GLM: sweep c ∈ [0,2] scaling
+- **`calibration.py`** — dose and gate on top of the GLM: sweep c ∈ [0,2] scaling
   β2, record per-node validation loss L[c,i] and |LISA| A[c,i]; select c per
   node at the **Pareto knee of (L[:,i], A[:,i])** (`cstar_lisa`, the proposed
   dose), with degenerate cells falling back to the global-knee `best_c`; a
@@ -66,14 +66,14 @@ restricts to POA/stgcn.
   Giacomini-White / Diebold-Mariano statistic).
 - **`probabilistic.py`** — the orchestrator: loads each backbone, runs POSEC and
   scores **three methods** — `base+Poisson`, `base+NB` (raw backbone baselines)
-  and `guardia-lisac+NB` (the proposed model) — on the unified discrete log score
+  and `posec` (the proposed model) — on the unified discrete log score
   + point/spatial metrics. Writes 4 CSVs. Sanity gates abort if any PMF loses
   mass or a log score is non-finite.
 - **`spatial_diag.py`** — residual cross-sectional dependence: Pesaran CD,
   correlogram by graph hop with a node-permutation null band, λ_max vs the
   Marchenko-Pastur edge, and error-correlation-matrix figures (base vs POSEC).
-- **`plotting.py`** — NeurIPS figure style (`set_style()`), one color per
-  method family (`PALETTE`, `method_color()`), `save_fig()` (PDF+PNG).
+- **`plotting.py`** — NeurIPS figure style (`set_style()`) and
+  `save_fig()` (PDF+PNG) for vector-friendly output.
 
 ### `scripts/` — entry points
 - `reproduce.py` — **the single replication driver**: runs the calibration +
@@ -95,12 +95,12 @@ HAC power) and `test_golden.py` (the SMOKE run reproduces
 
 ## 3. Design decisions
 
-- **One proposed model.** `guardia-lisac+NB` is the method; `base+Poisson` /
+- **One proposed model.** `posec` is the method; `base+Poisson` /
   `base+NB` are the raw-backbone baselines. The backbone catalogue is a registry.
 - **One config.** No hyperparameter lives outside `config.py`; the paper ↔
   code mapping is auditable in one screen.
 - **Anti-leak by construction.** Estimation consumes train; dose/gate use
-  validation; test enters only through `guardia_predict`, whose test-time
+  validation; test enters only through `calibrate`, whose test-time
   regressors are lagged observed values.
 - **Unified probabilistic ruler.** Every method is reduced to a PMF over the
   integers (Poisson / NB2) before scoring, so log scores are comparable.
@@ -116,4 +116,4 @@ HAC power) and `test_golden.py` (the SMOKE run reproduces
 | New backbone | train script + `_MODEL_SPECS`/`_DEFAULT_SUBDIR` in `models/infer.py` + `config.BACKBONES` |
 | New count distribution | subclass `Predictive` (provide `cdf`, `ppf`) |
 | New metric | function in `eval/metrics.py`, add to the row dict in `eval/probabilistic.py` |
-| Different NB grid / gate loss / dose grid | `config.py` / `hybrid/guardia.py` |
+| Different NB grid / gate loss / dose grid | `config.py` / `calib/calibration.py` |

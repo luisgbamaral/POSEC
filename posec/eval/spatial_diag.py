@@ -1,7 +1,7 @@
 """
 spatial_diag.py — residual spatial-correlation diagnostics (test residuals).
 
-For each city x backbone x method m in {base, guardia (POSEC)},
+For each city x backbone x method m in {base, posec},
 on TEST residuals eps = y_te - pt_m (T x N):
   1) Pesaran CD test of cross-sectional dependence.
   2) Correlogram of pairwise residual correlation by graph hop (1..5, far) with
@@ -11,7 +11,7 @@ on TEST residuals eps = y_te - pt_m (T x N):
      block for SP), saved as .npy and imshow PNG (base vs methods side by side).
 
 Outputs: results/probabilistic/spatial_diag.csv, figs/ecm_*.png, figs/correlogram_*.png
-Run:  python scripts/run_spatial_diag.py   (GUARD IA is the slow part: per-cell GLMs)
+Run:  python scripts/run_spatial_diag.py   (POSEC is the slow part: per-cell GLMs)
 """
 import os
 import numpy as np
@@ -26,7 +26,7 @@ from scipy.sparse.csgraph import shortest_path
 
 from posec.config import CITIES, BACKBONES, GATE_FRAC, OUT_DIR, DATA_DIR
 from posec.eval.probabilistic import load_backbone
-from posec.hybrid.guardia import guardia_predict
+from posec.calib.calibration import calibrate
 from posec.eval.plotting import set_style
 
 set_style()
@@ -99,7 +99,7 @@ def method_preds(ds, N, bk, Wr):
     (y_tr, p_tr), (y_va, p_va), (y_te, p_te) = data['train'], data['val'], data['test']
     preds = {'base': p_te}
     preds['posec'] = np.maximum(
-        guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N, gate_frac=GATE_FRAC)['lisapareto'][0], 0.0)
+        calibrate(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N, gate_frac=GATE_FRAC)['lisapareto'][0], 0.0)
     return y_te, preds
 
 

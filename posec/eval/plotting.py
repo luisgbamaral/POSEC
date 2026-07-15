@@ -1,22 +1,12 @@
 """
 plotting.py — standardized NeurIPS-style figure config for posec.
 
-Import and call `set_style()` once before plotting; use `method_color()` /
-`PALETTE` for consistent per-method colors and `save_fig()` for vector-friendly
-output. Keeps all paper figures visually uniform (fonts, sizes, palette).
+Call `set_style()` once before plotting; use `save_fig()` for vector-friendly
+output. Keeps all paper figures visually uniform (fonts, sizes, spines).
 """
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from os.path import join as pjoin
-
-# ── consistent colors per method family ──────────────────────────────────────
-PALETTE = {
-    'base':     '#7f7f7f',   # grey   — single model
-    'anscombe': '#1f77b4',   # blue   — Anscombe hybrid
-    'log1p':    '#2ca02c',   # green  — log1p hybrid
-    'additive': '#ff7f0e',   # orange — additive (level) hybrid
-    'guardia':  '#d62728',   # red    — GUARD IA
-}
 
 
 def set_style():
@@ -34,16 +24,6 @@ def set_style():
         'figure.dpi': 150, 'savefig.dpi': 300, 'savefig.bbox': 'tight',
         'pdf.fonttype': 42, 'ps.fonttype': 42,   # embed editable fonts
     })
-
-
-def method_color(name):
-    """Map a method name (hybrid-*, hybrid-add-*, hybrid-log-*, guardia*, base*) to a color."""
-    n = name.lower()
-    if n.startswith('guardia'):              return PALETTE['guardia']
-    if 'add' in n:                           return PALETTE['additive']
-    if 'log' in n:                           return PALETTE['log1p']
-    if n.startswith('hybrid'):               return PALETTE['anscombe']
-    return PALETTE['base']
 
 
 def save_fig(fig, out_dir, name):

@@ -1,19 +1,19 @@
-"""guardia.py — POSEC: per-cell Poisson-GLM calibration with a per-node
-Pareto-optimal spatial-lag dose (the proposed `guardia-lisac` correction)."""
+"""calibration.py — POSEC: per-cell Poisson-GLM calibration with a per-node
+Pareto-optimal, gated spatial-lag dose (the proposed `posec` correction)."""
 from joblib import Parallel, delayed
 import numpy as np
-from posec.config import EB_MIN, GUARDIA_GATE, GUARDIA_NJOBS
+from posec.config import EB_MIN, GATE_LOSS, N_JOBS
 from posec.eval.metrics import lisa_abs_per_node, mean_lisa_abs
-from posec.hybrid.glm import fit_one_node
+from posec.calib.glm import fit_one_node
 
 
-def guardia_predict(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
-                    gate_loss=GUARDIA_GATE, njobs=GUARDIA_NJOBS, gate_frac=0.0):
+def calibrate(y_tr, p_tr, y_va, p_va, y_te, p_te, Wr, N,
+                    gate_loss=GATE_LOSS, njobs=N_JOBS, gate_frac=0.0):
     """POSEC calibration: per-cell Poisson-GLM with a per-node Pareto-optimal,
     gated spatial-lag dose (Pareto-Optimal Spatial Error Calibration).
 
     Pipeline:
-      1. Fit the calibration GLM per cell (see posec.hybrid.glm) on TRAINING only.
+      1. Fit the calibration GLM per cell (see posec.calib.glm) on TRAINING only.
       2. Sweep a dose c in [0, 2] that scales the spatial-lag coefficient beta2;
          on VALIDATION record, per candidate c, the per-node gated loss curve
          L[c, i] and the per-node |LISA| curve A[c, i].
