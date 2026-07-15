@@ -1,4 +1,4 @@
-# POSEC — Pareto-Optimal Spatial Error Calibration via Poisson Regression
+# POSEC - Pareto-Optimal Spatial Error Calibration via Poisson Regression
 
 Post-hoc probabilistic calibration of frozen spatio-temporal neural backbones
 (STGCN, Graph-WaveNet, STHSL) for crime forecasting. **POSEC** fits a per-cell
@@ -7,8 +7,8 @@ much spatial-lag correction each cell receives at the **per-node Pareto knee** o
 (validation loss × local spatial autocorrelation |LISA|), behind a per-cell
 **gate**; the calibrated mean is scored as a Negative-Binomial distribution
 (`posec`, the proposed model). Evaluated against the raw backbone
-(`base+Poisson`, `base+NB`) on four crime datasets — São Paulo, Porto Alegre,
-Bahía, Chicago — with a unified discrete log score (ALS), point error (MAE/RMSE),
+(`base+Poisson`, `base+NB`) on four crime datasets - São Paulo, Porto Alegre,
+Buenos Aires, Chicago - with a unified discrete log score (ALS), point error (MAE/RMSE),
 PAI hotspot concentration, Moran's I and residual cross-sectional-dependence
 diagnostics. A weekly (7-day-ahead, single-step) variant of every dataset is also
 provided.
@@ -30,7 +30,7 @@ pip install -e .                       # makes `import posec` resolve
 ```
 
 Activating the env puts the CUDA DLLs on `PATH`, so TensorFlow 2.10 (`tf.compat.v1`
-graph mode) sees the GPU with no extra setup — **needed for training and for the
+graph mode) sees the GPU with no extra setup - **needed for training and for the
 backbone inference used in evaluation.** All commands run **from the repo root**.
 
 ## 2. Data
@@ -48,9 +48,9 @@ Rebuild from raw sources (`data_prep/`):
 python data_prep/prepare_chicago.py --raw-csv ./raw/chicago_crimes_2001_present.csv  # CHI_CRIME (public data)
 python data_prep/make_weekly.py                                                       # all *_7D variants
 ```
-`prepare_chicago.py` uses the public City-of-Chicago "Crimes 2001–Present" CSV
+`prepare_chicago.py` uses the public City-of-Chicago "Crimes 2001-Present" CSV
 (all types aggregated, 2023-01-01…2025-12-31, ~1 km grid). The SP/POA/BA prep
-scripts document provenance from non-redistributable sources — use the provided
+scripts document provenance from non-redistributable sources - use the provided
 built `data/` for those.
 
 ## 3. Checkpoints
@@ -71,7 +71,7 @@ SMOKE=1 python scripts/run_probabilistic.py          # POA_CRIME / stgcn only
 ```
 PowerShell: `$env:SMOKE=1; python scripts/run_probabilistic.py; $env:SMOKE=$null`
 
-## 5. Reproduce everything — one command
+## 5. Reproduce everything - one command
 
 ```bash
 python scripts/reproduce.py                 # eval + spatial diagnostics, all experiments
@@ -91,15 +91,15 @@ and `run_spatial_diag.py` (residual diagnostics), writing to `results/`:
 
 Each produces `als_master.csv` (ALS/MAE/RMSE/MI/PAI per method), `gw_dm_tests.csv`
 (Giacomini-White / Diebold-Mariano, HAC), `calibration.csv` (PIT + 80/95% coverage),
-`per_node.csv` (per-cell errors + POSEC doses/gates for maps), and — from the
-diagnostics — `spatial_diag.csv` + `figs/` (Pesaran CD, hop correlograms, ECM maps).
+`per_node.csv` (per-cell errors + POSEC doses/gates for maps), and - from the
+diagnostics - `spatial_diag.csv` + `figs/` (Pesaran CD, hop correlograms, ECM maps).
 A column-by-column `README.md` is written next to the CSVs. **Methods scored (3):**
 `base+Poisson`, `base+NB`, `posec` (proposed).
 
 **Protocol.** Daily experiments use `n_his=7` with a chronological 110/110 val/test
 split and a single-validation gate. The weekly experiment uses `n_his=6` (monthly
-memory) with a chronological **60/20/10/10** split — train / dose-validation /
-gate-validation / test — where the per-cell gate is applied on a **disjoint** block
+memory) with a chronological **60/20/10/10** split - train / dose-validation /
+gate-validation / test - where the per-cell gate is applied on a **disjoint** block
 (`gate_frac=1/3`), making it an independent test.
 
 ## 6. Determinism
@@ -107,8 +107,8 @@ gate-validation / test — where the per-cell gate is applied on a **disjoint** 
 - Stochastic steps are seeded (`np.random.seed(0)` for the randomized PIT and the
   `spatial_diag` permutation nulls); the GLM-IRLS and grid-MLE estimators are
   deterministic given the data.
-- GPU backbone inference uses TensorFloat-32, non-deterministic at ~1e-6 — far
-  below the 3–4 significant figures reported. The golden-regression test
+- GPU backbone inference uses TensorFloat-32, non-deterministic at ~1e-6 - far
+  below the 3-4 significant figures reported. The golden-regression test
   (`tests/test_golden.py`) therefore locks results with `atol=1e-3`.
 
 ## 7. Configuration
@@ -131,4 +131,4 @@ auto-skips if the POA_CRIME data/checkpoint are absent).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).

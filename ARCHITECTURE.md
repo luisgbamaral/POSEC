@@ -1,4 +1,4 @@
-# POSEC — Architecture
+# POSEC - Architecture
 
 How the code is organized, which equation lives in which module, and how to
 extend it. For installation and replication commands, see [README.md](README.md).
@@ -24,29 +24,29 @@ checkpoints/ ──► posec.models.infer ──► backbone predictions ŷ  (fr
 
 ## 2. Module ↔ method map
 
-### `posec/config.py` — the experiment
+### `posec/config.py` - the experiment
 Single source of truth: cities (SP/POA/BA/Chicago + weekly `*_7D`), backbones,
 split sizes, NB grid, POSEC settings (gate loss, EB pool min nodes, parallel
 jobs), paths. Env overrides drive `reproduce.py`: `POSEC_CITIES`, `POSEC_NVAL`,
 `POSEC_NTEST`, `POSEC_GATE_FRAC`, `POSEC_OUT`, `POSEC_BACKBONES`; `SMOKE=1`
 restricts to POA/stgcn.
 
-### `posec/models/` — backbones
-- `base_model.py`, `layers.py`, `trainer.py`, `tester.py` — STGCN and the SAEA
+### `posec/models/` - backbones
+- `base_model.py`, `layers.py`, `trainer.py`, `tester.py` - STGCN and the SAEA
   variants (`--saea none|sparse|structural`), TF1-style graphs.
 - Graph-WaveNet and STHSL are self-contained in `scripts/train_*.py`.
-- `infer.py` — the backbone catalogue (`_MODEL_SPECS`: checkpoint prefix +
+- `infer.py` - the backbone catalogue (`_MODEL_SPECS`: checkpoint prefix +
   output tensor per model) and frozen-weight inference. **Adding a backbone =
   registering it here** + a checkpoint dir following `_DEFAULT_SUBDIR`.
 
-### `posec/calib/` — the calibration method
-- **`glm.py`** — the POSEC engine: per-cell Poisson calibration GLM
+### `posec/calib/` - the calibration method
+- **`glm.py`** - the POSEC engine: per-cell Poisson calibration GLM
 
       log E[y_it] = β0 + α·log(ŷ_it) + β1·ε_{i,t−1} + β2·(Wε)_{i,t−1}
 
   (ŷ as a *free* covariate: α≠1 absorbs systematic bias). Training data only.
   `fit_one_node` returns the MLE params + val/test design matrices for the sweep.
-- **`calibration.py`** — dose and gate on top of the GLM: sweep c ∈ [0,2] scaling
+- **`calibration.py`** - dose and gate on top of the GLM: sweep c ∈ [0,2] scaling
   β2, record per-node validation loss L[c,i] and |LISA| A[c,i]; select c per
   node at the **Pareto knee of (L[:,i], A[:,i])** (`cstar_lisa`, the proposed
   dose), with degenerate cells falling back to the global-knee `best_c`; a
@@ -55,40 +55,40 @@ restricts to POA/stgcn.
   `gate_frac>0` splits validation into a dose block (val1) and a **disjoint** gate
   block (val2) so the gate is independent of dose selection (weekly, short series);
   `gate_frac=0` (daily) is the single-validation gate.
-- **`predictive.py`** — every method is scored as a discrete distribution over
+- **`predictive.py`** - every method is scored as a discrete distribution over
   integer counts. `Predictive` (shared: pmf via cdf differences, log score,
   randomized PIT, central-interval coverage); `CountPredictive` (native
   Poisson/NB2); `nb_alpha_mle` (NB2 dispersion by grid MLE on validation).
 
-### `posec/eval/` — scoring and diagnostics
-- **`metrics.py`** — Moran's I (+ analytical p per step, t-test across steps),
+### `posec/eval/` - scoring and diagnostics
+- **`metrics.py`** - Moran's I (+ analytical p per step, t-test across steps),
   LISA (mean and per-node), PAI@k, MAE/RMSE, Newey-West HAC test (the
   Giacomini-White / Diebold-Mariano statistic).
-- **`probabilistic.py`** — the orchestrator: loads each backbone, runs POSEC and
-  scores **three methods** — `base+Poisson`, `base+NB` (raw backbone baselines)
-  and `posec` (the proposed model) — on the unified discrete log score
+- **`probabilistic.py`** - the orchestrator: loads each backbone, runs POSEC and
+  scores **three methods** - `base+Poisson`, `base+NB` (raw backbone baselines)
+  and `posec` (the proposed model) - on the unified discrete log score
   + point/spatial metrics. Writes 4 CSVs. Sanity gates abort if any PMF loses
   mass or a log score is non-finite.
-- **`spatial_diag.py`** — residual cross-sectional dependence: Pesaran CD,
+- **`spatial_diag.py`** - residual cross-sectional dependence: Pesaran CD,
   correlogram by graph hop with a node-permutation null band, λ_max vs the
   Marchenko-Pastur edge, and error-correlation-matrix figures (base vs POSEC).
-- **`plotting.py`** — NeurIPS figure style (`set_style()`) and
+- **`plotting.py`** - NeurIPS figure style (`set_style()`) and
   `save_fig()` (PDF+PNG) for vector-friendly output.
 
-### `scripts/` — entry points
-- `reproduce.py` — **the single replication driver**: runs the calibration +
+### `scripts/` - entry points
+- `reproduce.py` - **the single replication driver**: runs the calibration +
   spatial diagnostics for every experiment set (`main` / `chicago` / `weekly`),
   with `--train` / `--build-data` flags. Portable (uses `sys.executable`; no
   machine paths).
-- `run_probabilistic.py`, `run_spatial_diag.py` — thin wrappers over the eval
-  package. `train_{stgcn,gwavenet,sthsl}.py` — the SAEA-protocol backbone trainers.
+- `run_probabilistic.py`, `run_spatial_diag.py` - thin wrappers over the eval
+  package. `train_{stgcn,gwavenet,sthsl}.py` - the SAEA-protocol backbone trainers.
 
-### `data_prep/` — dataset construction
+### `data_prep/` - dataset construction
 `prepare_chicago.py` (public Chicago CSV → `CHI_CRIME_*` on a ~1 km grid),
 `make_weekly.py` (7-day-sum `*_7D` variants), and the SP/POA/BA provenance
 scripts. All take input paths via CLI (defaults under `./raw/`).
 
-### `tests/` — numerical invariants + golden lock
+### `tests/` - numerical invariants + golden lock
 `test_math.py` (PMF mass, PIT uniformity, NB-MLE recovery, LISA consistency,
 HAC power) and `test_golden.py` (the SMOKE run reproduces
 `tests/fixtures/golden_smoke_poa_stgcn_als.csv` within `atol=1e-3`).

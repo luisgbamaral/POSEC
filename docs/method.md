@@ -1,6 +1,6 @@
 # POSEC: Pareto-Optimal Spatial Error Calibration via Poisson Regression
 
-*Method and experimental protocol — companion to `posec/calib/{glm,calibration}.py`.*
+*Method and experimental protocol - companion to `posec/calib/{glm,calibration}.py`.*
 
 ## 1. Problem and idea
 
@@ -25,11 +25,11 @@ $$\log \mathbb{E}[y_{it}] \;=\; \beta_{0i} \;+\; \alpha_i \log \hat{y}_{it}
 Here $W$ is the row-normalised spatial-weight matrix and
 $(W\varepsilon)_{i,t} = \sum_j w_{ij}\varepsilon_{jt}$. Two design decisions matter:
 
-- **Free elasticity $\alpha_i$** — the backbone enters as a covariate, not a fixed
+- **Free elasticity $\alpha_i$** - the backbone enters as a covariate, not a fixed
   offset; $\alpha_i \neq 1$ absorbs multiplicative bias (the fixed offset is
   recovered at $\alpha_i = 1$). Predictions use $\log\hat y$ floored at
   $\log(10^{-3})$ to keep the link finite.
-- **Lagged regressors only** — both residual terms use $t-1$; no contemporaneous
+- **Lagged regressors only** - both residual terms use $t-1$; no contemporaneous
   neighbour information enters Eq. (1), so the one-step-ahead forecast needs no
   simultaneity.
 
@@ -54,7 +54,7 @@ A_i(c) = \tfrac{1}{T_{va}}\textstyle\sum_t \big|\,z_{it}\,(Wz_t)_i\,\big|, \tag{
 
 where $\tilde\mu(c)$ is the **gated** prediction (§4), $z_t$ is the
 cross-sectionally centred residual at time $t$, and $A_i$ is the mean absolute
-**local Moran (LISA)** — a per-cell measure of residual spatial clustering. The
+**local Moran (LISA)** - a per-cell measure of residual spatial clustering. The
 squared loss in (3) follows the configured gate loss (MSE here; MAE recovers the
 original criterion).
 
@@ -79,13 +79,13 @@ validation chronologically into a dose block (val1) and a **disjoint** gate bloc
 dose-selection data. `gate_frac` is the fraction of validation held out for val2
 (0 = single-validation gate; $1/3$ for the weekly split).
 
-## 5. Dose selection — per-node Pareto knee
+## 5. Dose selection - per-node Pareto knee
 
 The proposed dose is chosen **per cell** at the **Pareto knee** of the bi-objective
 frontier $\big(L_i(\cdot), A_i(\cdot)\big)$ (validation loss vs. local spatial
 autocorrelation): among the strictly non-dominated candidates, pick the one nearest
-the ideal point after per-cell min–max normalisation. Degenerate cells (flat curves)
-inherit the **global** knee — the same construction on the aggregate frontier
+the ideal point after per-cell min-max normalisation. Degenerate cells (flat curves)
+inherit the **global** knee - the same construction on the aggregate frontier
 $\big(\sqrt{\bar L(c)},\, \bar A(c)\big)$. The GLM is fit once and the grid swept
 once; selection uses validation only.
 
@@ -101,7 +101,7 @@ $\hat y$ as a Poisson (`base+Poisson`) and as an NB2 (`base+NB`).
 ## 7. Experimental protocol
 
 **Data.** Daily counts on regular spatial cells, all crime types aggregated: São
-Paulo ($N{=}1445$), Porto Alegre ($N{=}94$), Bahía ($N{=}74$), Chicago ($N{=}653$),
+Paulo ($N{=}1445$), Porto Alegre ($N{=}94$), Buenos Aires ($N{=}74$), Chicago ($N{=}653$),
 each with a weekly (7-day-sum) variant. Backbones train on z-standardised data;
 predictions are de-normalised and truncated at 0.
 
@@ -127,7 +127,7 @@ $f_{\text{worse}}$ (fraction of cells whose MAE worsens vs. the backbone).
 (iii) *Spatial:* Moran's $I$ of the test residuals with analytical per-step
 $p$-values and a $t$-test across steps; PAI@$k$ for $k \in \{1,5,10,25\}\%$; and, in
 the diagnostics, Pesaran CD, the hop correlogram, and the error-correlation matrix.
-(iv) *Significance:* Giacomini–White (log scores) and Diebold–Mariano (absolute /
-squared errors) on the per-time loss differentials, with a Newey–West HAC variance
+(iv) *Significance:* Giacomini-White (log scores) and Diebold-Mariano (absolute /
+squared errors) on the per-time loss differentials, with a Newey-West HAC variance
 (truncation $\lfloor T^{1/3} \rfloor$). Per-cell doses $c_i^\*$ and gates $s_i$ are
 exported for spatial inspection (dose maps, gate-overlap analysis).

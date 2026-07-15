@@ -7,16 +7,16 @@ are from `results/{probabilistic,chi_daily,all_7d}/`.
 
 **Metrics.** **ALS** = mean discrete log score (lower = better; the headline
 probabilistic metric). Δ = improvement of POSEC over **base+NB** (the fair
-baseline, same NB family). **t** = Giacomini–White statistic on the per-day ALS
-differential with Newey–West HAC variance (t < 0 favours POSEC; `***`/`**`/`*` =
+baseline, same NB family). **t** = Giacomini-White statistic on the per-day ALS
+differential with Newey-West HAC variance (t < 0 favours POSEC; `***`/`**`/`*` =
 p < 0.001 / 0.01 / 0.05). **CD** = Pesaran cross-sectional-dependence of the test
 residuals; **corr_h₁** = mean nearest-neighbour residual correlation (both from
-`spatial_diag`) — POSEC lowering them means it *whitens* the spatial error the
+`spatial_diag`) - POSEC lowering them means it *whitens* the spatial error the
 backbone left behind.
 
 ---
 
-## 1. Main — SP / POA / BA (daily)
+## 1. Main - SP / POA / BA (daily)
 
 | Cell | base+NB | POSEC | ΔALS | GW t | CD base→POSEC | corr_h₁ base→POSEC |
 |---|---|---|---|---|---|---|
@@ -32,9 +32,9 @@ backbone left behind.
 
 POSEC improves ALS in **9/9** cells, **significantly (p<0.001) everywhere**. The
 residual whitening is dramatic on the large graph (**São Paulo: CD 369→91,
-212→44, 343→90** ≈ 3–4× reduction; corr_h₁ cut ~3×). POA is the hard case: the
+212→44, 343→90** ≈ 3-4× reduction; corr_h₁ cut ~3×). POA is the hard case: the
 spatial dependence is high and POSEC only partly removes it (one cell, POA/gwavenet,
-even rises) — consistent with the per-node dose being unable to fully absorb a
+even rises) - consistent with the per-node dose being unable to fully absorb a
 strong, persistent spatial signal.
 
 ## 2. Chicago (daily)
@@ -71,12 +71,12 @@ gate (`gate_frac=1/3`); the backbones are retrained under this split.
 
 POSEC improves ALS in **11/12** weekly cells (CHI_7D/stgcn is flat, −0.1% n.s.),
 significant in **8/12**. The largest gains are again where a backbone is badly
-calibrated on the sparse weekly series (STHSL: **+19–27%**), where the NB calibration
+calibrated on the sparse weekly series (STHSL: **+19-27%**), where the NB calibration
 rescues an over-confident predictive. Whitening is strongest on São Paulo/stgcn
 (CD 423→149, corr_h₁ 0.108→0.045) and Chicago/sthsl (60→24); on Porto Alegre the
 residual dependence is high and persistent and POSEC does not remove it (CD rises
 slightly). The independent gate (dose on val1, gate on the disjoint val2) leaves the
-scores essentially unchanged vs a single-validation gate — the per-cell dose signal
+scores essentially unchanged vs a single-validation gate - the per-cell dose signal
 is weak, consistent with §4.
 
 ## 4. Takeaways
@@ -85,16 +85,16 @@ is weak, consistent with §4.
    flat), significant in 20/24, by **+0.3% to +26.8%** ALS over the fair NB
    baseline. Biggest gains where the backbone is worst calibrated (STHSL, weekly).
 2. **It attacks the spatial error the backbone leaves behind.** On the large,
-   strongly-dependent graphs it cuts Pesaran CD ~3–4× (São Paulo daily and weekly)
+   strongly-dependent graphs it cuts Pesaran CD ~3-4× (São Paulo daily and weekly)
    and nearest-neighbour residual correlation ~3×. Where residual dependence is weak
-   (Bahía) there is little to remove; where it is strong and persistent (Porto
-   Alegre) POSEC only partly whitens it — an honest limitation of a per-cell dose.
-3. **The gains are cheap and backbone-agnostic** — a per-cell Poisson GLM wrapping
+   (Buenos Aires) there is little to remove; where it is strong and persistent (Porto
+   Alegre) POSEC only partly whitens it - an honest limitation of a per-cell dose.
+3. **The gains are cheap and backbone-agnostic** - a per-cell Poisson GLM wrapping
    frozen STGCN / Graph-WaveNet / STHSL, with a per-cell gate that never degrades a
    well-behaved cell.
 
-> **Known issue (kept by design — no prediction cap):** on `SP_CRIME_7D / gwavenet`
-> the POSEC point MAE blows up (~7e8) for a single cell — an `exp()` overflow in the
+> **Known issue (kept by design - no prediction cap):** on `SP_CRIME_7D / gwavenet`
+> the POSEC point MAE blows up (~7e8) for a single cell - an `exp()` overflow in the
 > per-cell GLM on a sparse weekly series that passes the gate but diverges on test.
 > The independent gate reduced this (it moved off `stgcn`, which is now clean) but
 > does not eliminate it; we deliberately keep no prediction cap. The **ALS is
