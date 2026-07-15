@@ -70,14 +70,15 @@ $$s_i(c) = \mathbb{1}\!\left[\,L_i^{\text{calib}}(c) < L_i^{\text{base}}\,\right
 The gate is the method's safety net: cells where calibration does not help keep the
 backbone untouched, bounding the worst case.
 
-**Independent gate (`gate_frac`).** When validation is abundant (the daily
-experiments) the dose is selected and gated on the same validation block. When the
-series is short (the weekly experiment) that reuse is optimistic, so we split the
-validation chronologically into a dose block (val1) and a **disjoint** gate block
-(val2): the dose is chosen on val1 (Eq. 3), the gate $s_i$ is evaluated on val2
-(Eq. 4). This makes the gate an independent test rather than re-using the
-dose-selection data. `gate_frac` is the fraction of validation held out for val2
-(0 = single-validation gate; $1/3$ for the weekly split).
+**Independent gate (`gate_frac`).** The dose and the gate must not be selected on
+the same data: choosing the dose to minimise validation loss and then gating on
+that same loss is optimistic. We therefore split the validation chronologically
+into a dose block (val1) and a **disjoint** gate block (val2): the dose is chosen on
+val1 (Eq. 3), the gate $s_i$ is evaluated on val2 (Eq. 4), making the gate an
+independent test. `gate_frac` is the fraction of validation held out for val2, set
+to $1/3$ throughout (the daily 110-day validation splits into ~73 dose / ~37 gate;
+the weekly 30% validation into 20% dose / 10% gate). `gate_frac=0` recovers the
+single-validation gate.
 
 ## 5. Dose selection - per-node Pareto knee
 
@@ -105,13 +106,15 @@ Paulo ($N{=}1445$), Porto Alegre ($N{=}94$), Buenos Aires ($N{=}74$), Chicago ($
 each with a weekly (7-day-sum) variant. Backbones train on z-standardised data;
 predictions are de-normalised and truncated at 0.
 
-**Splits & memory.** Strictly chronological, no shuffling.
-- *Daily:* $n_{his}=7$; last $110$ days = test, previous $110$ = validation, rest =
-  training; single-validation gate.
+**Splits & memory.** Strictly chronological, no shuffling; the per-cell gate is
+always judged on a validation block disjoint from dose selection ($\texttt{gate\_frac}=1/3$).
+- *Daily:* $n_{his}=7$; last $110$ days = test, previous $110$ = validation (split
+  ~73 dose / ~37 gate), rest = training. Data is abundant, so the training fraction
+  stays large (~70-80%).
 - *Weekly:* $n_{his}=6$ (monthly memory; STGCN requires the temporal output kernel
-  $K_o>1$, i.e. $n_{his}\ge 6$); chronological **60/20/10/10** split
-  (train / dose-validation / gate-validation / test) with the independent gate
-  ($\texttt{gate\_frac}=1/3$).
+  $K_o>1$, i.e. $n_{his}\ge 6$); the series is short, so we rebalance to a
+  chronological **60/20/10/10** split (train / dose-validation / gate-validation /
+  test).
 
 **Anti-leak.** Eq. (1) is estimated on train only; dose and gate use validation
 only; the test regressors $\varepsilon_{i,t-1}, (W\varepsilon)_{i,t-1}$ are built

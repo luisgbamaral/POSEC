@@ -121,8 +121,9 @@ aggregated forecast).
 **Splits & memory.** Strictly chronological, no shuffling; normalisation
 statistics come from the training portion only.
 - *Daily* (main / chicago): `n_his = 7` (weekly cycle); last 110 days = test,
-  preceding 110 = validation, remainder = training. The per-cell gate is decided
-  on that single validation block.
+  preceding 110 = validation, remainder = training. Data is abundant, so the
+  training fraction stays large; the 110-day validation is split ~73 dose / ~37
+  gate for the independent gate (`gate_frac = 1/3`), as in the weekly case.
 - *Weekly*: aggregation removes the day-of-week cycle, so we use `n_his = 6`
   (~monthly memory; also the minimum the STGCN backbone admits). Because the series
   is short (104-156 weeks) and

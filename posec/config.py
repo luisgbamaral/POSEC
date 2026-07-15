@@ -24,8 +24,9 @@ ALPHA_GRID = np.logspace(-4, 1, 60)
 EB_MIN, N_JOBS, GATE_LOSS = 20, 4, 'mse'
 
 # ── Independent gate: fraction of validation held out (val2) to gate the dose
-# selected on val1. 0.0 = single-validation gate (daily); >0 splits val (weekly).
-GATE_FRAC = 0.0
+# selected on val1. Default 1/3 (all experiments): the per-cell gate is judged on a
+# disjoint validation block. 0.0 recovers the single-validation gate.
+GATE_FRAC = 1.0 / 3.0
 
 # ── paths ────────────────────────────────────────────────────────────────────
 DATA_DIR  = './data'

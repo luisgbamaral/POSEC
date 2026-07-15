@@ -4,12 +4,12 @@ For each experiment set it runs the POSEC calibration (run_probabilistic) and th
 residual spatial diagnostics (run_spatial_diag) on the trained backbones, writing
 the result CSVs + figures under ./results/.
 
-Protocol per experiment set:
+Protocol per experiment set (the per-cell gate is always judged on a validation
+block disjoint from dose selection, gate_frac=1/3):
   main / chicago (DAILY): n_his=7, chronological last-110 test / prev-110 val;
-                          single-validation gate (gate_frac=0).
+                          the 110-day validation splits ~73 dose / ~37 gate.
   weekly (7-day-ahead):   n_his=6 (monthly memory), chronological 60/20/10/10
-                          (train / dose-val / gate-val / test); the gate is an
-                          INDEPENDENT block (gate_frac=1/3 of the 30% validation).
+                          (train / dose-val / gate-val / test).
 
 Prerequisites (see README): an activated env with the deps (environment.yml;
 TensorFlow needs the GPU only for --train); datasets in ./data and trained
@@ -40,9 +40,9 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 # experiment set -> config. split is ("abs", n_val, n_test) or ("frac", val_frac, test_frac).
 EXPERIMENTS = {
     "main":    dict(datasets=["SP_CRIME", "POA_CRIME", "BA_LESIONES"],
-                    n_his=7, split=("abs", 110, 110), gate_frac=0.0, out="results/probabilistic"),
+                    n_his=7, split=("abs", 110, 110), gate_frac=1.0 / 3.0, out="results/probabilistic"),
     "chicago": dict(datasets=["CHI_CRIME"],
-                    n_his=7, split=("abs", 110, 110), gate_frac=0.0, out="results/chi_daily"),
+                    n_his=7, split=("abs", 110, 110), gate_frac=1.0 / 3.0, out="results/chi_daily"),
     "weekly":  dict(datasets=["SP_CRIME_7D", "POA_CRIME_7D", "BA_LESIONES_7D", "CHI_CRIME_7D"],
                     n_his=6, split=("frac", 0.30, 0.10), gate_frac=1.0 / 3.0, out="results/all_7d"),
 }

@@ -9,10 +9,19 @@ are from `results/{probabilistic,chi_daily,all_7d}/`.
 probabilistic metric). Δ = improvement of POSEC over **base+NB** (the fair
 baseline, same NB family). **t** = Giacomini-White statistic on the per-day ALS
 differential with Newey-West HAC variance (t < 0 favours POSEC; `***`/`**`/`*` =
-p < 0.001 / 0.01 / 0.05). **CD** = Pesaran cross-sectional-dependence of the test
-residuals; **corr_h₁** = mean nearest-neighbour residual correlation (both from
-`spatial_diag`) - POSEC lowering them means it *whitens* the spatial error the
-backbone left behind.
+p < 0.001 / 0.01 / 0.05). The **spatial** headline is the **Pesaran CD** =
+cross-sectional-dependence of the test residuals, with **corr_h₁** = mean
+nearest-neighbour residual correlation (both from `spatial_diag`) - POSEC lowering
+them means it *whitens* the spatial error the backbone left behind. We lead with CD
+rather than Moran's I: on these panels Moran's I (still exported in `als_master`) is a
+low-power global average that barely moves, whereas the Pesaran CD is a powerful
+test built for exactly this residual cross-sectional dependence.
+
+All numbers use the **independent per-cell gate** (`gate_frac=1/3`): the dose is
+selected on one validation block and the gate is judged on a disjoint second block,
+so the safety net is an out-of-sample test rather than re-using the dose-selection
+data - a small honesty cost (<1% ALS vs a single-validation gate) applied uniformly
+to daily and weekly.
 
 ---
 
@@ -20,33 +29,35 @@ backbone left behind.
 
 | Cell | base+NB | POSEC | ΔALS | GW t | CD base→POSEC | corr_h₁ base→POSEC |
 |---|---|---|---|---|---|---|
-| SP / stgcn        | 0.426 | **0.384** | +9.9% | −9.5 *** | 369 → **91** | 0.035 → **0.010** |
-| SP / gwavenet     | 0.390 | **0.367** | +5.9% | −20.3 *** | 212 → **44** | 0.028 → **0.006** |
-| SP / sthsl        | 0.374 | **0.368** | +1.6% | −11.1 *** | 343 → **90** | 0.032 → **0.010** |
-| POA / stgcn       | 1.758 | **1.659** | +5.6% | −7.7 *** | 19.4 → 13.9 | 0.044 → 0.032 |
-| POA / gwavenet    | 1.666 | **1.615** | +3.1% | −8.1 *** | 13.2 → 23.2 | 0.036 → 0.048 |
-| POA / sthsl       | 1.657 | **1.617** | +2.4% | −7.8 *** | 35.8 → 29.1 | 0.075 → 0.061 |
-| BA / stgcn        | 0.869 | **0.785** | +9.7% | −9.7 *** | 13.1 → 7.5 | 0.025 → 0.015 |
-| BA / gwavenet     | 0.629 | **0.599** | +4.8% | −4.8 *** | 10.2 → **2.4** | 0.018 → **0.005** |
-| BA / sthsl        | 0.710 | **0.608** | +14.4% | −27.0 *** | 15.1 → **4.0** | 0.025 → **0.008** |
+| SP / stgcn        | 0.426 | **0.390** | +8.5% | −10.2 *** | 369 → **101** | 0.035 → **0.011** |
+| SP / gwavenet     | 0.390 | **0.369** | +5.4% | −22.3 *** | 212 → **44** | 0.028 → **0.006** |
+| SP / sthsl        | 0.374 | **0.369** | +1.3% | −11.9 *** | 343 → **100** | 0.032 → **0.011** |
+| POA / stgcn       | 1.758 | **1.677** | +4.6% | −7.9 *** | 19 → 14 | 0.044 → 0.031 |
+| POA / gwavenet    | 1.666 | **1.619** | +2.8% | −8.4 *** | 13 → 21 | 0.036 → 0.044 |
+| POA / sthsl       | 1.657 | **1.624** | +2.0% | −6.4 *** | 36 → 29 | 0.075 → 0.062 |
+| BA / stgcn        | 0.869 | **0.794** | +8.6% | −10.4 *** | 13 → 8 | 0.025 → 0.014 |
+| BA / gwavenet     | 0.629 | **0.599** | +4.8% | −5.0 *** | 10 → **2** | 0.018 → **0.005** |
+| BA / sthsl        | 0.710 | **0.616** | +13.2% | −29.7 *** | 15 → **3** | 0.025 → **0.005** |
 
 POSEC improves ALS in **9/9** cells, **significantly (p<0.001) everywhere**. The
-residual whitening is dramatic on the large graph (**São Paulo: CD 369→91,
-212→44, 343→90** ≈ 3-4× reduction; corr_h₁ cut ~3×). POA is the hard case: the
-spatial dependence is high and POSEC only partly removes it (one cell, POA/gwavenet,
-even rises) - consistent with the per-node dose being unable to fully absorb a
-strong, persistent spatial signal.
+residual whitening (Pesaran CD) is dramatic on the large graph (**São Paulo: CD
+369→101, 212→44, 343→100** ≈ 3-4× reduction; corr_h₁ cut ~3×) and on Buenos Aires
+(**13→8, 10→2, 15→3**). POA is the hard case: the spatial dependence is high and
+POSEC only partly removes it (one cell, POA/gwavenet, even rises) - consistent with
+the per-node dose being unable to fully absorb a strong, persistent spatial signal.
 
 ## 2. Chicago (daily)
 
 | Cell | base+NB | POSEC | ΔALS | GW t | CD base→POSEC | corr_h₁ base→POSEC |
 |---|---|---|---|---|---|---|
-| CHI / stgcn     | 1.071 | **1.067** | +0.4% | −5.0 *** | 22.3 → 20.4 | 0.017 → 0.014 |
-| CHI / gwavenet  | 1.097 | **1.066** | +2.8% | −16.4 *** | 22.2 → 29.2 | 0.021 → 0.015 |
-| CHI / sthsl     | 1.091 | **1.073** | +1.6% | −11.5 *** | 29.5 → 23.9 | 0.017 → 0.014 |
+| CHI / stgcn     | 1.071 | **1.068** | +0.3% | −3.7 *** | 22 → 21 | 0.017 → 0.014 |
+| CHI / gwavenet  | 1.097 | **1.069** | +2.6% | −17.5 *** | 22 → 27 | 0.021 → 0.014 |
+| CHI / sthsl     | 1.091 | **1.075** | +1.5% | −10.2 *** | 29 → 24 | 0.017 → 0.014 |
 
-POSEC wins ALS in **3/3** (significant), modestly. Chicago residuals carry
-significant Moran's I (as in SP); corr_h₁ drops in all three, CD in two of three.
+POSEC wins ALS in **3/3** (significant), modestly. Chicago is a harder whitening
+case than São Paulo: corr_h₁ drops in all three backbones, and Pesaran CD drops in
+two of three (gwavenet rises 22→27) - the residual dependence is milder to begin
+with, so there is less structured error for the per-cell dose to remove.
 
 ## 3. Weekly (7-day-ahead, single step)
 
